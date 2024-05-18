@@ -28,14 +28,15 @@ let data = reactive({
     materials: {},
     selected_texture: 'video',
     textures: {video: null, webcam: null},
-    start_stop: 'Stop'
+    start_stop: 'Stop',
+    time: 0.0,
+    pixel_size: 0.01
 });
-
 
 function createShaderMaterial(shader, scene) {
     let material = new ShaderMaterial(shader, scene, BASE_URL + 'shaders/' + shader, {
         attributes: ['position', 'uv'],
-        uniforms: ['worldViewProjection'],
+        uniforms: ['worldViewProjection', 'time', 'pixel_size'],
         samplers: ['image']
     });
     material.backFaceCulling = false;
@@ -144,9 +145,9 @@ onMounted(() => {
     data.materials.custom = createShaderMaterial('custom', data.scene);
 
     // Create video textures
-    data.textures.video = new VideoTexture('video', BASE_URL + 'videos/dm_vector.mp4', data.scene, false,
+    data.textures.video = new VideoTexture('video', BASE_URL + 'videos/rick_roll.mp4', data.scene, false,
                                            false, VideoTexture.BILINEAR_SAMPLINGMODE, 
-                                           {autoUpdateTexture: true, autoPlay: true, loop: true, muted: true});
+                                           {autoUpdateTexture: true, autoPlay: true, loop: true, muted: false});
 
     data.materials.standard.setTexture('image', data.textures.video);
     data.materials.blackwhite.setTexture('image', data.textures.video);
@@ -184,12 +185,22 @@ onMounted(() => {
 
     // Animation function - called before each frame gets rendered
     data.scene.onBeforeRenderObservable.add(() => {
+        data.time += engine.getDeltaTime() * 0.001;
+
         if (data.filter !== rect.material.name) {
             rect.material = data.materials[data.filter];
         }
 
         if (data.textures[data.selected_texture] !== null) {
             data.materials[data.filter].setTexture('image', data.textures[data.selected_texture]);
+        }
+
+        if (data.filter === 'ripple') {
+            data.materials[data.filter].setFloat('time', data.time);
+        }
+
+        if (data.filter === 'custom') {
+            data.materials[data.filter].setFloat('pixel_size', data.pixel_size);
         }
     });
 
